@@ -5,10 +5,11 @@ use secp256k1::Keypair;
 
 type KeyId = i32;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
-    id: uuid::Uuid,
-    name: String,
-    keys: HashMap<KeyId, Keypair>,
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub keys: HashMap<KeyId, Keypair>,
 }
 
 impl Default for User {
