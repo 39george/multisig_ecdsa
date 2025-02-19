@@ -83,13 +83,13 @@ impl Application {
         #[rustfmt::skip]
         let mut router = Router::new()
             .nest("/api/v1", api::router())
-            .with_state(app_state.clone())
+            .with_state(app_state)
             .fallback_service(ServeDir::new("dist").fallback(ServeFile::new("dist/index.html")))
             .layer(RequestTracingLayer)
             .route("/api/healthcheck", routing::get(healthcheck)); // Do not trace healthchecks
 
         match std::env::var("ENVIRONMENT").unwrap_or_default().as_str() {
-            "production" => todo!(),
+            "production" => (),
             _ => {
                 router = router.merge(
                     SwaggerUi::new("/swagger-ui")
