@@ -15,8 +15,9 @@ pub enum Error {
 
 crate::impl_debug!(Error);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
-    content: Vec<u8>,
+    pub content: Vec<u8>,
     /// Signatures with public keys
     signatures: Vec<(PublicKey, Option<ecdsa::Signature>)>,
     /// Min required signatures count for approve message
@@ -81,4 +82,9 @@ impl Message {
         tracing::info!("verification successed");
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    // TODO: implement me!
 }

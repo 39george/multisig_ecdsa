@@ -17,6 +17,8 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::api;
 use crate::config::Settings;
 use crate::middleware::RequestTracingLayer;
+use crate::storage::in_memory::InMemoryStorage;
+use crate::storage::Storage;
 
 use self::api_doc::ApiDoc;
 
@@ -34,9 +36,10 @@ pub struct Application {
 }
 
 /// Thread-safe type
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AppState {
     pub settings: Arc<Settings>,
+    pub storage: Arc<dyn Storage + Send + Sync>,
 }
 
 impl Application {
@@ -55,6 +58,7 @@ impl Application {
 
         let app_state = AppState {
             settings: Arc::new(configuration),
+            storage: Arc::new(InMemoryStorage::default()),
         };
 
         let server = Self::build_server(listener, app_state);

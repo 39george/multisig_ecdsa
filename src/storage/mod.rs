@@ -1,31 +1,54 @@
-use crate::domain::user::User;
+use crate::domain::{messages::Message, user::User};
 
 pub mod in_memory;
 
-#[allow(async_fn_in_trait)]
-pub trait Storage {
-    type Err;
-    type Msg;
+type MsgModifier = fn(&mut Message);
 
+#[derive(thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    Internal(#[from] anyhow::Error),
+    #[error("user exists already")]
+    UserExists,
+    #[error("no user found")]
+    NoUser,
+    #[error("message exists already")]
+    MsgExists,
+    #[error("no message found")]
+    NoMsg,
+}
+
+crate::impl_debug!(Error);
+
+#[async_trait::async_trait]
+pub trait Storage {
     // CRUD for user
 
-    async fn store_user(user: User) -> Result<(), Self::Err>;
-    async fn get_user(user_id: uuid::Uuid) -> Result<Option<User>, Self::Err>;
-    async fn update_user(user: User) -> Result<(), Self::Err>;
-    async fn remove_user(user_id: uuid::Uuid) -> Result<(), Self::Err>;
-    async fn all_users() -> Result<Vec<User>, Self::Err>;
+    async fn store_user(&self, user: User) -> Result<(), Error>;
+    async fn get_user(
+        &self,
+        user_id: &uuid::Uuid,
+    ) -> Result<Option<User>, Error>;
+    async fn update_user(&self, user: User) -> Result<(), Error>;
+    async fn remove_user(&self, user_id: &uuid::Uuid) -> Result<(), Error>;
+    async fn all_users(&self) -> Result<Vec<User>, Error>;
 
     // CRUD for msgs
 
-    async fn store_msg(msg: Self::Msg) -> Result<(), Self::Err>;
+    async fn store_msg(&self, msg: Message) -> Result<(), Error>;
     async fn get_msg(
-        msg_id: uuid::Uuid,
-    ) -> Result<Option<Self::Msg>, Self::Err>;
+        &self,
+        msg_hash: &secp256k1::hashes::sha256::Hash,
+    ) -> Result<Option<Message>, Error>;
     /// Use that function to add signature
-    async fn update_msg<F: Fn(&mut Self::Msg)>(
-        msg: Self::Msg,
-        with: F,
-    ) -> Result<(), Self::Err>;
-    async fn remove_msg(user_id: uuid::Uuid) -> Result<(), Self::Err>;
-    async fn all_messages() -> Result<Vec<()>, Self::Err>;
+    async fn update_msg(
+        &self,
+        msg: Message,
+        with: MsgModifier,
+    ) -> Result<(), Error>;
+    async fn remove_msg(
+        &self,
+        msg_hash: &secp256k1::hashes::sha256::Hash,
+    ) -> Result<(), Error>;
+    async fn all_messages(&self) -> Result<Vec<Message>, Error>;
 }
