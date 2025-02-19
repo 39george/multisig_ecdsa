@@ -10,6 +10,7 @@ pub trait Storage {
     // CRUD for user
 
     async fn store_user(user: User) -> Result<(), Self::Err>;
+    async fn get_user(user_id: uuid::Uuid) -> Result<Option<User>, Self::Err>;
     async fn update_user(user: User) -> Result<(), Self::Err>;
     async fn remove_user(user_id: uuid::Uuid) -> Result<(), Self::Err>;
     async fn all_users() -> Result<Vec<User>, Self::Err>;
@@ -17,6 +18,9 @@ pub trait Storage {
     // CRUD for msgs
 
     async fn store_msg(msg: Self::Msg) -> Result<(), Self::Err>;
+    async fn get_msg(
+        msg_id: uuid::Uuid,
+    ) -> Result<Option<Self::Msg>, Self::Err>;
     /// Use that function to add signature
     async fn update_msg<F: Fn(&mut Self::Msg)>(
         msg: Self::Msg,
