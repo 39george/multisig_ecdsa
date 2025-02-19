@@ -1,15 +1,12 @@
 use rand::Rng;
 use secp256k1::ecdsa;
 use secp256k1::hashes::Hash;
-use secp256k1::schnorr;
 use secp256k1::Keypair;
 use secp256k1::Message;
 use secp256k1::PublicKey;
 use secp256k1::Secp256k1;
 use secp256k1::SecretKey;
 use secp256k1::Signing;
-
-// Context
 use secp256k1::VerifyOnly;
 
 use secrecy::ExposeSecret;
