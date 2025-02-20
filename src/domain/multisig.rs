@@ -1,9 +1,9 @@
-use secp256k1::VerifyOnly;
+use secp256k1::All;
 use secp256k1::{ecdsa, Keypair, PublicKey, Secp256k1, Signing};
 
 use crate::crypto;
 
-#[derive(thiserror::Error)]
+#[derive(thiserror::Error, PartialEq, Eq)]
 pub enum Error {
     #[error("No public key found")]
     PublicKeyNotFound,
@@ -47,7 +47,7 @@ impl Multisig {
     }
     pub fn verify(
         &self,
-        secp: &Secp256k1<VerifyOnly>,
+        secp: &Secp256k1<All>,
         content: &[u8],
         count_required: usize,
     ) -> Result<(), Error> {

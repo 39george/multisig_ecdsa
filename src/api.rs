@@ -189,10 +189,9 @@ async fn verify_msg_signature(
         .get_msg(&msg_id)
         .await?
         .ok_or(ErrorResponse::NotFoundError(anyhow!("no message found")))?;
-    let secp = secp256k1::Secp256k1::verification_only();
     match msg
         .signature
-        .verify(&secp, &msg.content, msg.count_required)
+        .verify(&state.secp, &msg.content, msg.count_required)
     {
         Ok(()) => Ok("success".to_string()),
         Err(e) => Ok(format!("{e}")),

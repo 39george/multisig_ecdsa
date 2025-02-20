@@ -4,13 +4,13 @@ use rand::Rng;
 use secp256k1::ecdsa;
 use secp256k1::hashes::hash160;
 use secp256k1::hashes::Hash;
+use secp256k1::All;
 use secp256k1::Keypair;
 use secp256k1::Message;
 use secp256k1::PublicKey;
 use secp256k1::Secp256k1;
 use secp256k1::SecretKey;
 use secp256k1::Signing;
-use secp256k1::VerifyOnly;
 
 use secrecy::ExposeSecret;
 
@@ -25,7 +25,7 @@ pub fn sign<C: Signing>(
 }
 
 pub fn verify(
-    secp: &Secp256k1<VerifyOnly>,
+    secp: &Secp256k1<All>,
     msg: &[u8],
     signature: &ecdsa::Signature,
     pubkey: &PublicKey,
