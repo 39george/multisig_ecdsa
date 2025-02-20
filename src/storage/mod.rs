@@ -1,5 +1,5 @@
 use crate::api::ErrorResponse;
-use crate::domain::{messages::Message, user::User};
+use crate::domain::{message::Message, user::User};
 
 pub mod in_memory;
 

@@ -5,7 +5,7 @@ use std::sync::MutexGuard;
 
 use secp256k1::hashes::Hash;
 
-use crate::domain::{messages::Message, user::User};
+use crate::domain::{message::Message, user::User};
 
 use super::Error;
 

@@ -54,6 +54,11 @@ pub struct PostMsgRequest {
     pub required_signature_count: Option<usize>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SignMsgRequest {
+    pub keys: Vec<String>,
+}
+
 // ───── Responses ────────────────────────────────────────────────────────── //
 
 #[derive(Debug, Serialize)]

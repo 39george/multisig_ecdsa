@@ -12,7 +12,7 @@ use secp256k1::PublicKey;
 
 use crate::crypto;
 use crate::domain::message::Message;
-use crate::startup::api_doc::{self, PostMsgRequest};
+use crate::startup::api_doc::{self, PostMsgRequest, SignMsgRequest};
 use crate::{domain::user::User, startup::AppState};
 
 #[derive(thiserror::Error)]
@@ -61,8 +61,10 @@ pub fn router() -> Router<AppState> {
         .route("/user", routing::post(new_user))
         .route("/user/{username}", routing::get(get_user))
         .route("/users", routing::get(list_users))
-        .route("/msg/{msg}", routing::post(new_msg))
-        .route("/keypair", routing::post(new_keypair))
+        .route("/user/{username}/keypair", routing::post(new_keypair))
+        .route("/msg", routing::post(new_msg))
+        .route("/msg/{msg_id}", routing::post(sign_msg))
+        .route("/msg/{msg_id}", routing::get(verify_msg_signature))
 }
 
 async fn new_user(
@@ -125,6 +127,51 @@ async fn new_msg(
     State(state): State<AppState>,
     Json(req): Json<PostMsgRequest>,
 ) -> Result<String, ErrorResponse> {
+    let selected_pubkeys = extract_selected_pubkeys(&state, req.keys).await?;
+    let msg = Message::new(
+        req.content.as_bytes(),
+        selected_pubkeys,
+        req.required_signature_count,
+    );
+    let msg_id = msg.id.to_string();
+    state.storage.store_msg(msg).await?;
+    Ok(msg_id)
+}
+
+async fn sign_msg(
+    State(state): State<AppState>,
+    Path(msg_id): Path<uuid::Uuid>,
+    Json(req): Json<SignMsgRequest>,
+) -> Result<String, ErrorResponse> {
+    let selected_pubkeys = extract_selected_pubkeys(&state, req.keys).await?;
+    //let msg = Message::new(
+    //    req.content.as_bytes(),
+    //    selected_pubkeys,
+    //    req.required_signature_count,
+    //);
+    //let msg_id = msg.id.to_string();
+    //state.storage.store_msg(msg)?;
+    Ok(String::new())
+}
+
+async fn verify_msg_signature(
+    State(state): State<AppState>,
+    Path(msg_id): Path<uuid::Uuid>,
+    Json(req): Json<SignMsgRequest>,
+) -> Result<String, ErrorResponse> {
+    Ok(String::new())
+}
+
+async fn new_keypair() -> StatusCode {
+    StatusCode::OK
+}
+
+// ───── Helpers ──────────────────────────────────────────────────────────── //
+
+async fn extract_selected_pubkeys(
+    state: &AppState,
+    keys: Vec<String>,
+) -> Result<Vec<PublicKey>, ErrorResponse> {
     let mut all_pubkeys = state
         .storage
         .all_users()
@@ -134,8 +181,7 @@ async fn new_msg(
         .flatten()
         .map(|pk| (hash160::Hash::hash(&pk.serialize()), pk))
         .collect::<HashMap<_, _>>();
-    let selected_pubkeys = req
-        .keys
+    let selected_pubkeys = keys
         .into_iter()
         .map(|key| {
             let pkh = crypto::pkh_from_bt_addr(&key).map_err(|e| {
@@ -147,16 +193,5 @@ async fn new_msg(
             Ok::<PublicKey, ErrorResponse>(pubkey)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let msg = Message::new(
-        req.content.as_bytes(),
-        selected_pubkeys,
-        req.required_signature_count,
-    );
-    let msg_id = msg.id.to_string();
-    state.storage.store_msg(msg)?;
-    Ok(msg_id)
-}
-
-async fn new_keypair() -> StatusCode {
-    StatusCode::OK
+    Ok(selected_pubkeys)
 }
