@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+grcov . -s . --binary-path ./target/debug/ -t html --ignore tests/  -o ./target/debug/coverage/

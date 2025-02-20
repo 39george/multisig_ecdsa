@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+export LLVM_PROFILE_FILE="coverage_data/default-%m.profraw"
+export RUSTFLAGS="-Cinstrument-coverage"
+cargo test
