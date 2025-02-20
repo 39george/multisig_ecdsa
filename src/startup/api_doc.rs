@@ -46,6 +46,11 @@ pub struct NotFoundResponse {
 // ───── Requests ─────────────────────────────────────────────────────────── //
 
 #[derive(Debug, Deserialize)]
+pub struct Username {
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PostMsgRequest {
     pub content: String,
     /// Shortened PKHs

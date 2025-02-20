@@ -69,9 +69,9 @@ pub fn router() -> Router<AppState> {
 
 async fn new_user(
     State(state): State<AppState>,
-    Query(user_name): Query<Option<String>>,
+    Query(api_doc::Username { name }): Query<api_doc::Username>,
 ) -> Result<StatusCode, ErrorResponse> {
-    let user = user_name
+    let user = name
         .map(|n| User {
             name: n,
             ..Default::default()
