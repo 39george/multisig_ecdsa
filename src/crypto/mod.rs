@@ -96,42 +96,10 @@ pub fn pkh_from_bt_addr(address: &str) -> Result<hash160::Hash, &'static str> {
     Ok(pubkey_hash)
 }
 
-fn run() {
+pub fn new_keypair(
+    secp: &Secp256k1<secp256k1::All>,
+) -> Result<Keypair, secp256k1::Error> {
     let mut rng = rand::rng();
-    let ctx = Secp256k1::new();
-    let verify_ctx = Secp256k1::verification_only();
-
-    let msg = b"Hello world!";
-
-    let keypairs = std::iter::repeat_with(|| {
-        let secret_key =
-            secrecy::SecretBox::init_with(|| rng.random::<[u8; 32]>());
-        Keypair::from_seckey_slice(&ctx, secret_key.expose_secret())
-    })
-    .take(3)
-    .collect::<Result<Vec<_>, _>>()
-    .expect("Failed");
-
-    let pubkeys = keypairs.iter().map(|k| k.public_key()).collect::<Vec<_>>();
-    let seckeys = keypairs.iter().map(|k| k.secret_key()).collect::<Vec<_>>();
-
-    // Sign with each private key
-    let signatures: Vec<ecdsa::Signature> = seckeys
-        .iter()
-        .map(|seckey| sign(&ctx, msg, seckey).expect("Failed to sign"))
-        .collect();
-
-    // Verify with each public key
-    let verification_results: Vec<Result<(), secp256k1::Error>> = pubkeys
-        .iter()
-        .zip(signatures.iter())
-        .map(|(pubkey, signature)| verify(&verify_ctx, msg, signature, pubkey))
-        .collect();
-
-    // Check if all signatures are valid
-    if verification_results.iter().all(Result::is_ok) {
-        println!("Multisig verification successful!");
-    } else {
-        println!("Multisig verification failed!");
-    }
+    let secret_key = secrecy::SecretBox::init_with(|| rng.random::<[u8; 32]>());
+    Keypair::from_seckey_slice(secp, secret_key.expose_secret())
 }

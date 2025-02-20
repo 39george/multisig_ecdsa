@@ -75,28 +75,25 @@ impl super::Storage for InMemoryStorage {
 
     async fn get_msg(
         &self,
-        msg_hash: &secp256k1::hashes::sha256::Hash,
+        msg_id: &uuid::Uuid,
     ) -> Result<Option<Message>, Error> {
         let lock = self.lock()?;
-        let msg = lock.msgs.iter().find(|m| {
-            let h = secp256k1::hashes::sha256::Hash::hash(&m.content);
-            h.eq(msg_hash)
-        });
+        let msg = lock.msgs.iter().find(|&m| m.id.eq(msg_id));
         Ok(msg.cloned())
     }
 
     async fn update_msg(
         &self,
-        msg: Message,
+        msg_id: &uuid::Uuid,
         with: super::MsgModifier,
     ) -> Result<(), Error> {
         let mut lock = self.lock()?;
         let msg = lock
             .msgs
             .iter_mut()
-            .find(|m| msg.eq(m))
+            .find(|m| msg_id.eq(&m.id))
             .ok_or(Error::NoMsg)?;
-        with(msg);
+        with(msg)?;
         Ok(())
     }
 

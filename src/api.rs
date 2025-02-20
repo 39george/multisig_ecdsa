@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Response};
@@ -8,7 +8,7 @@ use axum::Router;
 use axum::{routing, Json};
 use http::StatusCode;
 use secp256k1::hashes::{hash160, Hash};
-use secp256k1::PublicKey;
+use secp256k1::Keypair;
 
 use crate::crypto;
 use crate::domain::message::Message;
@@ -123,11 +123,31 @@ async fn list_users(
     Ok(Json(users))
 }
 
+async fn new_keypair(
+    State(state): State<AppState>,
+    Path(username): Path<String>,
+) -> Result<StatusCode, ErrorResponse> {
+    let mut user = state
+        .storage
+        .get_user(&username)
+        .await?
+        .ok_or(ErrorResponse::NotFoundError(anyhow!("user not found")))?;
+    let keypair = crypto::new_keypair(&state.secp)
+        .context("failed to generate keypair")?;
+    user.add_keypair(keypair);
+    state.storage.update_user(user).await?;
+    Ok(StatusCode::OK)
+}
+
 async fn new_msg(
     State(state): State<AppState>,
     Json(req): Json<PostMsgRequest>,
 ) -> Result<String, ErrorResponse> {
-    let selected_pubkeys = extract_selected_pubkeys(&state, req.keys).await?;
+    let selected_pubkeys = extract_selected_keypairs(&state, req.keys)
+        .await?
+        .into_iter()
+        .map(|k| k.public_key())
+        .collect();
     let msg = Message::new(
         req.content.as_bytes(),
         selected_pubkeys,
@@ -143,55 +163,67 @@ async fn sign_msg(
     Path(msg_id): Path<uuid::Uuid>,
     Json(req): Json<SignMsgRequest>,
 ) -> Result<String, ErrorResponse> {
-    let selected_pubkeys = extract_selected_pubkeys(&state, req.keys).await?;
-    //let msg = Message::new(
-    //    req.content.as_bytes(),
-    //    selected_pubkeys,
-    //    req.required_signature_count,
-    //);
-    //let msg_id = msg.id.to_string();
-    //state.storage.store_msg(msg)?;
+    let selected_keypairs = extract_selected_keypairs(&state, req.keys).await?;
+    for keypair in selected_keypairs {
+        let secp = state.secp.clone();
+        state
+            .storage
+            .update_msg(
+                &msg_id,
+                Box::new(move |msg| {
+                    msg.signature.sign(&secp, &msg.content, &keypair)?;
+                    Ok(())
+                }),
+            )
+            .await?;
+    }
     Ok(String::new())
 }
 
 async fn verify_msg_signature(
     State(state): State<AppState>,
     Path(msg_id): Path<uuid::Uuid>,
-    Json(req): Json<SignMsgRequest>,
 ) -> Result<String, ErrorResponse> {
-    Ok(String::new())
-}
-
-async fn new_keypair() -> StatusCode {
-    StatusCode::OK
+    let msg = state
+        .storage
+        .get_msg(&msg_id)
+        .await?
+        .ok_or(ErrorResponse::NotFoundError(anyhow!("no message found")))?;
+    let secp = secp256k1::Secp256k1::verification_only();
+    match msg
+        .signature
+        .verify(&secp, &msg.content, msg.count_required)
+    {
+        Ok(()) => Ok("success".to_string()),
+        Err(e) => Ok(format!("{e}")),
+    }
 }
 
 // ───── Helpers ──────────────────────────────────────────────────────────── //
 
-async fn extract_selected_pubkeys(
+async fn extract_selected_keypairs(
     state: &AppState,
     keys: Vec<String>,
-) -> Result<Vec<PublicKey>, ErrorResponse> {
-    let mut all_pubkeys = state
+) -> Result<Vec<Keypair>, ErrorResponse> {
+    let mut all_keypairs = state
         .storage
         .all_users()
         .await?
         .into_iter()
-        .map(|u| u.keys.into_iter().map(|(_, k)| k.public_key()))
-        .flatten()
-        .map(|pk| (hash160::Hash::hash(&pk.serialize()), pk))
+        .flat_map(|u| u.keys.into_values())
+        .map(|k| (hash160::Hash::hash(&k.public_key().serialize()), k))
         .collect::<HashMap<_, _>>();
-    let selected_pubkeys = keys
+    let selected_keypairs = keys
         .into_iter()
         .map(|key| {
             let pkh = crypto::pkh_from_bt_addr(&key).map_err(|e| {
                 ErrorResponse::BadRequest(anyhow!("invalid key: {}", e))
             })?;
-            let pubkey = all_pubkeys.remove(&pkh).ok_or(
+            let keypair = all_keypairs.remove(&pkh).ok_or(
                 ErrorResponse::NotFoundError(anyhow!("key not found: {}", key)),
             )?;
-            Ok::<PublicKey, ErrorResponse>(pubkey)
+            Ok::<Keypair, ErrorResponse>(keypair)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(selected_pubkeys)
+    Ok(selected_keypairs)
 }

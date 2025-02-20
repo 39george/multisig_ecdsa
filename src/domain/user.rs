@@ -21,3 +21,10 @@ impl Default for User {
         }
     }
 }
+
+impl User {
+    pub fn add_keypair(&mut self, keypair: Keypair) {
+        let last_id = self.keys.keys().max().copied().unwrap_or_default();
+        self.keys.insert(last_id + 1, keypair);
+    }
+}

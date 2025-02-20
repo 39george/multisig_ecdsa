@@ -9,7 +9,7 @@ pub struct Message {
     /// Signatures with public keys
     pub signature: Multisig,
     /// Min required signatures count for approve message
-    count_required: usize,
+    pub count_required: usize,
 }
 
 impl Message {

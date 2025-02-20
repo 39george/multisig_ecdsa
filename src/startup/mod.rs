@@ -8,6 +8,8 @@ use axum::routing;
 use axum::serve::Serve;
 use axum::Router;
 use http::StatusCode;
+use secp256k1::All;
+use secp256k1::Secp256k1;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
@@ -40,6 +42,7 @@ pub struct Application {
 pub struct AppState {
     pub settings: Arc<Settings>,
     pub storage: Arc<dyn Storage + Send + Sync>,
+    pub secp: Secp256k1<All>,
 }
 
 impl Application {
@@ -59,6 +62,7 @@ impl Application {
         let app_state = AppState {
             settings: Arc::new(configuration),
             storage: Arc::new(InMemoryStorage::default()),
+            secp: secp256k1::Secp256k1::new(),
         };
 
         let server = Self::build_server(listener, app_state);

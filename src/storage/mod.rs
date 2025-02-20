@@ -1,9 +1,11 @@
 use crate::api::ErrorResponse;
+use crate::domain::multisig;
 use crate::domain::{message::Message, user::User};
 
 pub mod in_memory;
 
-type MsgModifier = fn(&mut Message);
+type MsgModifier =
+    Box<dyn Fn(&mut Message) -> Result<(), multisig::Error> + Send>;
 
 #[derive(thiserror::Error)]
 pub enum Error {
@@ -17,6 +19,8 @@ pub enum Error {
     MsgExists,
     #[error("no message found")]
     NoMsg,
+    #[error(transparent)]
+    Multisig(#[from] multisig::Error),
 }
 
 crate::impl_debug!(Error);
@@ -24,13 +28,14 @@ crate::impl_debug!(Error);
 impl From<Error> for ErrorResponse {
     fn from(value: Error) -> Self {
         match value {
-            Error::Internal(e) => ErrorResponse::InternalError(e.into()),
+            Error::Internal(e) => ErrorResponse::InternalError(e),
             Error::UserExists | Error::MsgExists => {
                 ErrorResponse::ConflictError(value.into())
             }
             Error::NoUser | Error::NoMsg => {
                 ErrorResponse::NotFoundError(value.into())
             }
+            Error::Multisig(error) => ErrorResponse::BadRequest(error.into()),
         }
     }
 }
@@ -50,12 +55,12 @@ pub trait Storage {
     async fn store_msg(&self, msg: Message) -> Result<(), Error>;
     async fn get_msg(
         &self,
-        msg_hash: &secp256k1::hashes::sha256::Hash,
+        msg_id: &uuid::Uuid,
     ) -> Result<Option<Message>, Error>;
     /// Use that function to add signature
     async fn update_msg(
         &self,
-        msg: Message,
+        msg_id: &uuid::Uuid,
         with: MsgModifier,
     ) -> Result<(), Error>;
     async fn remove_msg(
