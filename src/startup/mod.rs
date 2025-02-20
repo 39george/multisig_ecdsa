@@ -13,8 +13,8 @@ use secp256k1::Secp256k1;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
+//use utoipa::OpenApi;
+//use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api;
 use crate::config::Settings;
@@ -22,7 +22,7 @@ use crate::middleware::RequestTracingLayer;
 use crate::storage::in_memory::InMemoryStorage;
 use crate::storage::Storage;
 
-use self::api_doc::ApiDoc;
+//use self::api_doc::ApiDoc;
 
 pub mod api_doc;
 
@@ -101,10 +101,10 @@ impl Application {
                     // allow requests from any origin
                     .allow_origin(tower_http::cors::Any);
                 router = router
-                    .merge(
-                        SwaggerUi::new("/swagger-ui")
-                            .url("/api-docs/openapi.json", ApiDoc::openapi()),
-                    )
+                    //    .merge(
+                    //        SwaggerUi::new("/swagger-ui")
+                    //            .url("/api-docs/openapi.json", ApiDoc::openapi()),
+                    //    )
                     .layer(cors);
             }
         }
@@ -117,14 +117,14 @@ impl Application {
     }
 }
 
-#[utoipa::path(
-    get,
-    path = "/api/healthcheck",
-    responses(
-        (status = 200, description = "Healthcheck"),
-    ),
-    tag = "open"
-)]
+//#[utoipa::path(
+//    get,
+//    path = "/api/healthcheck",
+//    responses(
+//        (status = 200, description = "Healthcheck"),
+//    ),
+//    tag = "open"
+//)]
 async fn healthcheck() -> StatusCode {
     StatusCode::OK
 }
