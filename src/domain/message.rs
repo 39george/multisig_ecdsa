@@ -31,5 +31,101 @@ impl Message {
 
 #[cfg(test)]
 mod tests {
-    // TODO: implement me!
+    use crate::{crypto, domain::multisig};
+
+    use super::Message;
+
+    #[test]
+    fn signature_with_correct_keys_works(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let mut msg =
+            Message::new(b"Hello world!", extract_pubkeys(&keypairs), None);
+        for keypair in keypairs {
+            assert!(msg.signature.sign(&secp, &msg.content, &keypair).is_ok());
+        }
+        assert!(msg
+            .signature
+            .verify(&secp, &msg.content, msg.count_required)
+            .is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn signature_with_incorrect_key_fail(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let mut msg =
+            Message::new(b"Hello world!", extract_pubkeys(&keypairs), None);
+        for keypair in keypairs.iter().take(2) {
+            assert!(msg.signature.sign(&secp, &msg.content, keypair).is_ok());
+        }
+        let wrong_keypair = crypto::new_keypair(&secp)?;
+        assert_eq!(
+            msg.signature.sign(&secp, &msg.content, &wrong_keypair),
+            Err(multisig::Error::PublicKeyNotFound)
+        );
+        assert!(msg
+            .signature
+            .verify(&secp, &msg.content, msg.count_required)
+            .is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn signature_with_not_enough_keys_fail(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let mut msg =
+            Message::new(b"Hello world!", extract_pubkeys(&keypairs), None);
+        for keypair in keypairs.iter().take(2) {
+            assert!(msg.signature.sign(&secp, &msg.content, keypair).is_ok());
+        }
+        assert_eq!(
+            msg.signature
+                .verify(&secp, &msg.content, msg.count_required),
+            Err(multisig::Error::NotEnoughSignatures(2, 3)),
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn signature_with_incorrect_msg_fail(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let mut msg =
+            Message::new(b"Hello world!", extract_pubkeys(&keypairs), None);
+        for keypair in keypairs.iter().take(3) {
+            assert!(msg.signature.sign(&secp, b"other msg", keypair).is_ok());
+        }
+        assert_eq!(
+            msg.signature
+                .verify(&secp, &msg.content, msg.count_required),
+            Err(multisig::Error::Secp256k1(
+                secp256k1::Error::IncorrectSignature
+            )),
+        );
+        Ok(())
+    }
+
+    // Helpers
+
+    fn extract_pubkeys(
+        keypairs: &[secp256k1::Keypair],
+    ) -> Vec<secp256k1::PublicKey> {
+        keypairs.iter().map(|k| k.public_key()).collect()
+    }
+
+    fn generate_keypairs(
+        secp: &secp256k1::Secp256k1<secp256k1::All>,
+        count: usize,
+    ) -> Result<Vec<secp256k1::Keypair>, secp256k1::Error> {
+        std::iter::repeat_with(|| crypto::new_keypair(secp))
+            .take(count)
+            .collect::<Result<Vec<_>, _>>()
+    }
 }
