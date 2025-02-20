@@ -112,6 +112,42 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn multisig_more_signatures_than_required_success(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let pubkeys = extract_pubkeys(&keypairs);
+        let content = b"Hello world!";
+        let required_count = 2;
+        let mut msg = Message::new(content, pubkeys, Some(required_count));
+
+        for keypair in &keypairs {
+            msg.signature.sign(&secp, content, keypair)?;
+        }
+
+        assert!(msg.signature.verify(&secp, content, required_count).is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn multisig_empty_message() -> Result<(), Box<dyn std::error::Error>> {
+        let secp = secp256k1::Secp256k1::new();
+        let keypairs = generate_keypairs(&secp, 3)?;
+        let pubkeys = extract_pubkeys(&keypairs);
+        let content = b"";
+        let mut msg = Message::new(content, pubkeys, None);
+
+        for keypair in &keypairs {
+            msg.signature.sign(&secp, content, keypair)?;
+        }
+
+        assert!(msg.signature.verify(&secp, content, 3).is_ok());
+
+        Ok(())
+    }
+
     // Helpers
 
     fn extract_pubkeys(
