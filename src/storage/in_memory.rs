@@ -39,12 +39,9 @@ impl super::Storage for InMemoryStorage {
         Ok(())
     }
 
-    async fn get_user(
-        &self,
-        user_id: &uuid::Uuid,
-    ) -> Result<Option<User>, Error> {
+    async fn get_user(&self, username: &str) -> Result<Option<User>, Error> {
         let lock = self.lock()?;
-        Ok(lock.users.get(user_id).cloned())
+        Ok(lock.users.values().find(|&u| u.name.eq(username)).cloned())
     }
 
     async fn update_user(&self, user: User) -> Result<(), Error> {

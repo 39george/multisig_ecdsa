@@ -2,6 +2,7 @@
 //! and derive ToResponse to all types we bind as `response = Type`.
 //! We only need ToSchema derived if we set response as `body = Type`.
 
+use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToResponse};
 use utoipauto::utoipauto;
 
@@ -10,10 +11,6 @@ use utoipauto::utoipauto;
 #[derive(ToResponse)]
 #[response(description = "Something happened on the server")]
 pub struct InternalErrorResponse;
-
-#[derive(ToResponse)]
-#[response(description = "You not allowed to access this method")]
-pub struct ForbiddenResponse;
 
 // We use middleware to make json response from BadRequest
 #[allow(dead_code)]
@@ -29,31 +26,8 @@ pub struct ForbiddenResponse;
 pub struct BadRequestResponse(String);
 
 #[derive(ToResponse)]
-#[response(description = "Not acceptable error")]
-pub struct NotAcceptableErrorResponse;
-
-#[derive(ToResponse)]
-#[response(description = "Unauthorized error")]
-pub struct UnauthorizedErrorResponse;
-
-#[derive(ToResponse)]
-#[response(description = "Too many uploads error")]
-pub struct TooManyUploadsErrorResponse;
-
-#[derive(ToResponse)]
 #[response(description = "Conflict error")]
 pub struct ConflictErrorResponse;
-
-#[allow(dead_code)]
-#[derive(ToResponse)]
-#[response(
-    description = "Unsupported mediatype error",
-    content_type = "application/json",
-    example = json!({
-        "allowed_mediatypes": ["image/png"]
-    }),
-)]
-pub struct UnsupportedMediaTypeErrorResponse(String);
 
 // We use ToSchema here, because we write manually in every case,
 // inlined, description, examples etc.
@@ -67,6 +41,27 @@ pub struct UnsupportedMediaTypeErrorResponse(String);
 )]
 pub struct NotFoundResponse {
     param: String,
+}
+
+// ───── Requests ─────────────────────────────────────────────────────────── //
+
+#[derive(Debug, Deserialize)]
+pub struct PostMsgRequest {
+    pub content: String,
+    /// Shortened PKHs
+    pub keys: Vec<String>,
+    /// At least `count` signatures to aprove
+    pub required_signature_count: Option<usize>,
+}
+
+// ───── Responses ────────────────────────────────────────────────────────── //
+
+#[derive(Debug, Serialize)]
+pub struct User {
+    pub id: uuid::Uuid,
+    pub name: String,
+    /// Key is shortened PKH
+    pub keys: Vec<String>,
 }
 
 // ───── Api ──────────────────────────────────────────────────────────────── //

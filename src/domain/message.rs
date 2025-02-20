@@ -4,6 +4,7 @@ use super::multisig::Multisig;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
+    pub id: uuid::Uuid,
     pub content: Vec<u8>,
     /// Signatures with public keys
     pub signature: Multisig,
@@ -23,6 +24,7 @@ impl Message {
                 .unwrap_or(pubkeys.len())
                 .max(pubkeys.len()),
             signature: Multisig::new(pubkeys),
+            id: uuid::Uuid::new_v4(),
         }
     }
 }

@@ -179,6 +179,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "base58"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
+
+[[package]]
 name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1044,6 +1050,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
+ "base58",
  "bip39",
  "config",
  "fake",
@@ -2049,6 +2056,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c1f41ffb7cf259f1ecc2876861a17e7142e63ead296f671f81f6ae85903e0d6"
 dependencies = [
  "getrandom 0.3.1",
+ "serde",
 ]
 
 [[package]]

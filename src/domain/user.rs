@@ -15,7 +15,7 @@ pub struct User {
 impl Default for User {
     fn default() -> Self {
         User {
-            name: fake::faker::name::en::Name().fake(),
+            name: fake::faker::internet::en::Username().fake(),
             keys: Default::default(),
             id: uuid::Uuid::new_v4(),
         }
