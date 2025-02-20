@@ -12,7 +12,7 @@ pub struct Settings {
 impl Settings {
     pub fn load_configuration() -> Result<Settings, anyhow::Error> {
         let config_file = std::env::var("APP_CONFIG_FILE")
-            .expect("APP_CONFIG_FILE var is unset!");
+            .unwrap_or("config/config.yaml".to_string());
 
         config::Config::builder()
             .add_source(config::File::new(

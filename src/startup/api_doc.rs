@@ -50,7 +50,7 @@ pub struct Username {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PostMsgRequest {
     pub content: String,
     /// Shortened PKHs
@@ -59,7 +59,7 @@ pub struct PostMsgRequest {
     pub required_signature_count: Option<usize>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SignMsgRequest {
     pub keys: Vec<String>,
 }

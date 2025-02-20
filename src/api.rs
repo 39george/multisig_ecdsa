@@ -126,7 +126,7 @@ async fn list_users(
 async fn new_keypair(
     State(state): State<AppState>,
     Path(username): Path<String>,
-) -> Result<StatusCode, ErrorResponse> {
+) -> Result<String, ErrorResponse> {
     let mut user = state
         .storage
         .get_user(&username)
@@ -136,7 +136,7 @@ async fn new_keypair(
         .context("failed to generate keypair")?;
     user.add_keypair(keypair);
     state.storage.update_user(user).await?;
-    Ok(StatusCode::OK)
+    Ok(crypto::bt_addr_from_pk(&keypair.public_key()))
 }
 
 async fn new_msg(
