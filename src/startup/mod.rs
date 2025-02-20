@@ -95,10 +95,17 @@ impl Application {
         match std::env::var("ENVIRONMENT").unwrap_or_default().as_str() {
             "production" => (),
             _ => {
-                router = router.merge(
-                    SwaggerUi::new("/swagger-ui")
-                        .url("/api-docs/openapi.json", ApiDoc::openapi()),
-                );
+                let cors = tower_http::cors::CorsLayer::new()
+                    // allow `GET` and `POST` when accessing the resource
+                    .allow_methods([http::Method::GET, http::Method::POST])
+                    // allow requests from any origin
+                    .allow_origin(tower_http::cors::Any);
+                router = router
+                    .merge(
+                        SwaggerUi::new("/swagger-ui")
+                            .url("/api-docs/openapi.json", ApiDoc::openapi()),
+                    )
+                    .layer(cors);
             }
         }
 
